@@ -1,0 +1,15 @@
+build/
+build-*/
+sdkconfig
+sdkconfig.old
+managed_components/
+dependencies.lock
+.vscode/
+.codex-buddy-bridge-v1/
+.venv-buddy/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+dist/
+*.log
+*.fap-capture.json

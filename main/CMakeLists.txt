@@ -1,0 +1,27 @@
+idf_component_register(
+    SRCS "buddy_orchestrator.c" "main.c"
+         "buddy_line.c"
+         "buddy_ble.c"
+         "buddy_ble_store.c"
+         "buddy_ble_lifecycle.c"
+         "buddy_app_logic.c"
+         "buddy_protocol.c"
+         "buddy_state.c"
+         "buddy_settings.c"
+         "buddy_sound_logic.c"
+         "buddy_sound_player.c"
+         "buddy_screenshot.c"
+         "buddy_character.c"
+        "buddy_ui.c"
+        "buddy_i4.c"
+        "buddy_sprite.c"
+        "buddy_font_16.c"
+        "buddy_text_layout.c"
+    INCLUDE_DIRS "."
+    REQUIRES bsp bt esp_driver_usb_serial_jtag esp_hw_support esp_timer json nvs_flash
+)
+
+# ESP-IDF 5.5.3 only applies WRITE_ENC to generated CCCDs. Wrap the private
+# registration boundary so protected CCCDs also receive READ_ENC.
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,--wrap=ble_att_svr_register")
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,-u,__wrap_ble_att_svr_register")
