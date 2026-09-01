@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 import tempfile
@@ -40,7 +41,11 @@ class BackgroundBridgeTests(unittest.TestCase):
             bridge._handle_connected(True)
             self.assertTrue(bridge.connected)
             self.assertEqual(load_settings(path).last_device_address, "saved")
-            self.assertGreaterEqual(len(fake.sent), 3)
+            sent = [json.loads(payload) for payload in fake.sent]
+            self.assertIn({"cmd": "owner", "name": "用户"}, sent)
+            self.assertIn({"cmd": "status"}, sent)
+            self.assertTrue(any("time" in payload for payload in sent))
+            self.assertTrue(any("total" in payload for payload in sent))
 
     def test_without_saved_card_only_unambiguous_scan_connects(self):
         with tempfile.TemporaryDirectory() as temporary:

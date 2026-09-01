@@ -32,12 +32,20 @@ typedef struct {
 typedef struct {
     bool encrypted;
     bool battery_available;
+    bool battery_estimated;
     uint8_t battery_percent;
     uint16_t battery_mv;
     uint64_t uptime_ms;
     uint64_t free_heap;
     uint64_t queue_overflow_count;
 } buddy_app_status_runtime_t;
+
+typedef struct {
+    bool available;
+    bool estimated;
+    uint8_t percent;
+    uint16_t millivolts;
+} buddy_app_battery_reading_t;
 
 typedef esp_err_t (*buddy_app_ble_transport_fn_t)(void *context);
 
@@ -66,6 +74,8 @@ void buddy_app_rx_retry_record_eviction(buddy_app_rx_retry_state_t *state,
                                         buddy_app_rx_overflow_action_t action,
                                         bool succeeded);
 uint64_t buddy_app_rx_retry_overflow_count(const buddy_app_rx_retry_state_t *state);
+bool buddy_app_resolve_battery(int percent, int millivolts,
+                               buddy_app_battery_reading_t *reading);
 bool buddy_app_build_status(buddy_status_report_t *report,
                             const buddy_settings_snapshot_t *settings,
                             const buddy_app_status_runtime_t *runtime);

@@ -756,6 +756,7 @@ void buddy_state_snapshot(const buddy_state_t *state, buddy_ui_snapshot_t *snaps
     snapshot->sound_enabled = state->settings.sound_enabled;
     snapshot->sound_volume_percent = state->settings.sound_volume_percent;
     snapshot->battery_available = state->battery_available;
+    snapshot->battery_estimated = state->battery_estimated;
     snapshot->passkey_visible = state->passkey_visible;
     snapshot->prompt_connection_generation = state->prompt_connection_generation;
     snapshot->confirmation_connection_generation =

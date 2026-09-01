@@ -279,6 +279,7 @@ typedef struct {
     bool sound_enabled;
     uint8_t sound_volume_percent;
     bool battery_available;
+    bool battery_estimated;
     bool passkey_visible;
     uint32_t prompt_connection_generation;
     uint32_t confirmation_connection_generation;

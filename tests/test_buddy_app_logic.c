@@ -119,6 +119,26 @@ static void test_status_identity_comes_from_settings_snapshot(void)
     assert(report.uptime_ms == 123);
 }
 
+static void test_battery_reading_uses_soc_or_marked_voltage_fallback(void)
+{
+    buddy_app_battery_reading_t reading;
+
+    assert(buddy_app_resolve_battery(73, 3875, &reading));
+    assert(reading.available);
+    assert(!reading.estimated);
+    assert(reading.percent == 73);
+    assert(reading.millivolts == 3875);
+
+    assert(buddy_app_resolve_battery(-1, 3750, &reading));
+    assert(reading.available);
+    assert(reading.estimated);
+    assert(reading.percent == 50);
+    assert(reading.millivolts == 3750);
+
+    assert(!buddy_app_resolve_battery(-1, -1, &reading));
+    assert(!reading.available);
+}
+
 static void test_failed_stop_restarts_transport_and_reports_rollback(void)
 {
     fake_transport_t fake = {
@@ -146,6 +166,7 @@ int main(void)
     test_normal_heartbeat_coalesces_or_drops_without_priority_capacity();
     test_priority_retry_falls_back_after_a_race();
     test_status_identity_comes_from_settings_snapshot();
+    test_battery_reading_uses_soc_or_marked_voltage_fallback();
     test_failed_stop_restarts_transport_and_reports_rollback();
     return 0;
 }

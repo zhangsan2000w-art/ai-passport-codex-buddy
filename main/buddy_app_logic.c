@@ -443,6 +443,39 @@ uint64_t buddy_app_rx_retry_overflow_count(const buddy_app_rx_retry_state_t *sta
                                (uint64_t)state->priority_evictions;
 }
 
+bool buddy_app_resolve_battery(int percent, int millivolts,
+                               buddy_app_battery_reading_t *reading)
+{
+    const int fallback_empty_mv = 3300;
+    const int fallback_full_mv = 4200;
+
+    if (reading == NULL) {
+        return false;
+    }
+    memset(reading, 0, sizeof(*reading));
+    if (millivolts < 2500 || millivolts > 5000) {
+        return false;
+    }
+    reading->available = true;
+    reading->millivolts = (uint16_t)millivolts;
+    if (percent >= 0 && percent <= 100) {
+        reading->percent = (uint8_t)percent;
+        return true;
+    }
+
+    reading->estimated = true;
+    if (millivolts <= fallback_empty_mv) {
+        reading->percent = 0;
+    } else if (millivolts >= fallback_full_mv) {
+        reading->percent = 100;
+    } else {
+        reading->percent = (uint8_t)(((millivolts - fallback_empty_mv) * 100 +
+                                      (fallback_full_mv - fallback_empty_mv) / 2) /
+                                     (fallback_full_mv - fallback_empty_mv));
+    }
+    return true;
+}
+
 static bool buddy_app_copy_bounded(char *destination, size_t destination_size,
                                    const char *source, size_t source_size)
 {
@@ -474,6 +507,7 @@ bool buddy_app_build_status(buddy_status_report_t *report,
     report->denial_count = settings->denial_count;
     report->encrypted = runtime->encrypted;
     report->battery_available = runtime->battery_available;
+    report->battery_estimated = runtime->battery_estimated;
     report->battery_percent = runtime->battery_percent;
     report->battery_mv = runtime->battery_mv;
     report->uptime_ms = runtime->uptime_ms;

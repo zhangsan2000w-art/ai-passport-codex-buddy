@@ -19,8 +19,9 @@ if __package__:
     from .instance_guard import (BridgeInstanceGuard, CONTROL_HOST,
                                  CONTROL_PORT)
     from .notify_listener import NotifyListener
-    from .protocol import (build_heartbeat, build_owner, build_time_sync,
-                           parse_device_message, redact_protocol_line)
+    from .protocol import (build_heartbeat, build_owner, build_status_request,
+                           build_time_sync, parse_device_message,
+                           redact_protocol_line)
 else:
     from ble_client import BleWorker, DeviceInfo
     from codex_state import CodexStateTracker
@@ -28,8 +29,9 @@ else:
                                      load_settings, save_settings)
     from instance_guard import BridgeInstanceGuard, CONTROL_HOST, CONTROL_PORT
     from notify_listener import NotifyListener
-    from protocol import (build_heartbeat, build_owner, build_time_sync,
-                          parse_device_message, redact_protocol_line)
+    from protocol import (build_heartbeat, build_owner, build_status_request,
+                          build_time_sync, parse_device_message,
+                          redact_protocol_line)
 
 
 RECONNECT_SECONDS = 5.0
@@ -196,6 +198,7 @@ class BackgroundBridge:
         offset = -int(time.altzone if local.tm_isdst else time.timezone)
         self._send(build_time_sync(now, offset))
         self._send(build_owner(self.settings.owner))
+        self._send(build_status_request())
 
     def _heartbeat(self) -> None:
         values = self.codex_state.heartbeat()

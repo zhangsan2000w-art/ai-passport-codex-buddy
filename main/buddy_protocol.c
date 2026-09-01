@@ -668,6 +668,9 @@ int buddy_protocol_device_status_json(char *json, size_t size,
         buddy_writer_u64(&writer, status->battery_percent);
         buddy_writer_literal(&writer, ",\"mV\":");
         buddy_writer_u64(&writer, status->battery_mv);
+        if (status->battery_estimated) {
+            buddy_writer_literal(&writer, ",\"approx\":true");
+        }
         buddy_writer_literal(&writer, "}");
     }
     buddy_writer_literal(&writer, ",\"sys\":{\"up\":");

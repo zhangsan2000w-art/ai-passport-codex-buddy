@@ -81,7 +81,7 @@ class BuddyControllerApp(tk.Tk):
         self.name_var = tk.StringVar(value="Codex Buddy")
         self._entry_row(identity, "使用者", self.owner_var)
         self._entry_row(identity, "设备名称", self.name_var)
-        ttk.Button(identity, text="同步时间和使用者", command=self._send_bootstrap).pack(fill="x", pady=2)
+        ttk.Button(identity, text="同步时间、使用者和状态", command=self._send_bootstrap).pack(fill="x", pady=2)
         ttk.Button(identity, text="设置设备名称", command=lambda: self._send(build_name(self.name_var.get()))).pack(fill="x", pady=2)
         ttk.Button(identity, text="读取设备状态", command=lambda: self._send(build_status_request())).pack(fill="x", pady=2)
         ttk.Button(identity, text="请求取消配对", command=lambda: self._send(build_unpair())).pack(fill="x", pady=2)
@@ -169,6 +169,7 @@ class BuddyControllerApp(tk.Tk):
         offset = -int(time.timezone if not time.localtime().tm_isdst else time.altzone)
         self._send(build_time_sync(now, offset))
         self._send(build_owner(owner))
+        self._send(build_status_request())
 
     def _heartbeat(self) -> None:
         values = self.codex_state.heartbeat() if self.live_mode else self.scenario.heartbeat()

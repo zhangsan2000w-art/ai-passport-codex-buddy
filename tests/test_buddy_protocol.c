@@ -381,6 +381,10 @@ static void test_device_status_omits_unavailable_battery_fields(void)
     assert(buddy_protocol_device_status_json(json, sizeof(json), &status) > 0);
     assert(strstr(json, "\"bat\":{\"pct\":73,\"mV\":3875}") != NULL);
     assert(strstr(json, "\"sys\":{\"up\":123,\"heap\":32000}") != NULL);
+
+    status.battery_estimated = true;
+    assert(buddy_protocol_device_status_json(json, sizeof(json), &status) > 0);
+    assert(strstr(json, "\"bat\":{\"pct\":73,\"mV\":3875,\"approx\":true}") != NULL);
 }
 
 static void test_task_tx_capacity_handles_worst_case_escaping(void)

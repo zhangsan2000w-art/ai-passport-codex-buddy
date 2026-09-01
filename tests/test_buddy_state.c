@@ -471,18 +471,21 @@ static void test_ui_snapshot_runtime_indicators_default_off(void)
     assert(!snapshot.ble_connected);
     assert(!snapshot.ble_encrypted);
     assert(!snapshot.battery_available);
+    assert(!snapshot.battery_estimated);
     assert(snapshot.battery_percent == 0);
     assert(snapshot.battery_mv == 0);
 
     state.ble_connected = true;
     state.ble_encrypted = true;
     state.battery_available = true;
+    state.battery_estimated = true;
     state.battery_percent = 73;
     state.battery_mv = 3875;
     buddy_state_snapshot(&state, &snapshot);
     assert(snapshot.ble_connected);
     assert(snapshot.ble_encrypted);
     assert(snapshot.battery_available);
+    assert(snapshot.battery_estimated);
     assert(snapshot.battery_percent == 73);
     assert(snapshot.battery_mv == 3875);
 }

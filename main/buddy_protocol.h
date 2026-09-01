@@ -22,6 +22,7 @@ typedef struct {
     uint64_t highest_celebrated_level;
     bool encrypted;
     bool battery_available;
+    bool battery_estimated;
     uint8_t battery_percent;
     uint16_t battery_mv;
 } buddy_status_report_t;

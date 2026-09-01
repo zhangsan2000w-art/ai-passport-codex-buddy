@@ -123,7 +123,7 @@ static portMUX_TYPE s_view_lock = portMUX_INITIALIZER_UNLOCKED;
 static buddy_rendered_view_t s_rendered_view;
 static buddy_settings_snapshot_t s_initial_settings;
 static buddy_sound_tracker_t s_sound_tracker;
-static bool s_initial_battery_available;
+static bool s_battery_initialized;
 static atomic_bool s_ble_initialized;
 static atomic_bool s_app_ready;
 static atomic_uint s_control_coalesced;
@@ -539,28 +539,38 @@ static bool buddy_control_to_event(const buddy_control_event_t *control,
 
 static void buddy_sample_battery(buddy_state_t *state)
 {
+    buddy_app_battery_reading_t reading;
     int percent;
     int millivolts;
 
-    if (!s_initial_battery_available) {
+    if (!s_battery_initialized) {
+        s_battery_initialized = bsp_battery_init() == ESP_OK;
+    }
+    if (!s_battery_initialized) {
         state->battery_available = false;
         return;
     }
     percent = bsp_battery_soc();
     millivolts = bsp_battery_mv();
-    if (percent < 0 || percent > 100 || millivolts < 0 || millivolts > UINT16_MAX) {
+    if (!buddy_app_resolve_battery(percent, millivolts, &reading)) {
+        if (percent < 0 && millivolts < 0) {
+            s_battery_initialized = false;
+        }
         state->battery_available = false;
+        state->battery_estimated = false;
         return;
     }
-    state->battery_available = true;
-    state->battery_percent = (uint8_t)percent;
-    state->battery_mv = (uint16_t)millivolts;
+    state->battery_available = reading.available;
+    state->battery_estimated = reading.estimated;
+    state->battery_percent = reading.percent;
+    state->battery_mv = reading.millivolts;
 }
 
 static void buddy_reset_transient_state(buddy_state_t *state, const char *message)
 {
     buddy_settings_snapshot_t settings;
     bool battery_available = state->battery_available;
+    bool battery_estimated = state->battery_estimated;
     uint8_t battery_percent = state->battery_percent;
     uint16_t battery_mv = state->battery_mv;
 
@@ -572,6 +582,7 @@ static void buddy_reset_transient_state(buddy_state_t *state, const char *messag
     }
     buddy_state_init(state, &settings);
     state->battery_available = battery_available;
+    state->battery_estimated = battery_estimated;
     state->battery_percent = battery_percent;
     state->battery_mv = battery_mv;
     state->ble_connected = buddy_ble_is_connected();
@@ -726,6 +737,7 @@ static esp_err_t buddy_orchestrator_status(void *context, const buddy_state_t *s
     buddy_app_status_runtime_t runtime = {
         .encrypted = atomic_load(&s_ble_initialized) && buddy_ble_is_encrypted(),
         .battery_available = state->battery_available,
+        .battery_estimated = state->battery_estimated,
         .battery_percent = state->battery_percent,
         .battery_mv = state->battery_mv,
         .uptime_ms = buddy_now_ms(),
@@ -986,6 +998,10 @@ static void buddy_app_task(void *context)
             if (xQueueReceive(ready, &control, 0) == pdTRUE &&
                 buddy_control_to_event(&control, &state, &event)) {
                 buddy_state_reduce(&state, &event, now_ms, &action);
+                if (control.type == BUDDY_CONTROL_BLE_CONNECTED) {
+                    buddy_sample_battery(&state);
+                    last_battery_ms = now_ms;
+                }
                 reduced = true;
             }
         } else if (ready == s_rx_priority_queue || ready == s_rx_normal_queue) {
@@ -1064,7 +1080,7 @@ void app_main(void)
         return;
     }
     bsp_display_backlight(100);
-    s_initial_battery_available = bsp_battery_init() == ESP_OK;
+    s_battery_initialized = bsp_battery_init() == ESP_OK;
 
     if (buddy_settings_init() != ESP_OK || buddy_settings_load(&s_initial_settings) != ESP_OK) {
         ESP_LOGE(TAG, "settings initialization failed");

@@ -17,6 +17,13 @@ static const char *TAG = "bsp_batt";
 
 static i2c_master_dev_handle_t s_dev;
 
+static void cw_remove_device(void) {
+    if (s_dev != NULL) {
+        (void)i2c_master_bus_rm_device(s_dev);
+        s_dev = NULL;
+    }
+}
+
 static int cw_read(uint8_t reg, uint8_t *buf, size_t n) {
     if (!s_dev) return -1;
     return i2c_master_transmit_receive(s_dev, &reg, 1, buf, n, 100) == ESP_OK ? 0 : -1;
@@ -29,7 +36,13 @@ static int cw_write(uint8_t reg, uint8_t val) {
 }
 
 esp_err_t bsp_battery_init(void) {
-    if (s_dev) return ESP_OK;
+    if (s_dev) {
+        uint8_t ver = 0;
+
+        if (cw_read(CW_REG_VERSION, &ver, 1) == 0) return ESP_OK;
+        ESP_LOGW(TAG, "CW2017 已失去响应，重新挂载 I2C 设备");
+        cw_remove_device();
+    }
 
     esp_err_t e = bsp_i2c_init();
     if (e != ESP_OK) return e;
@@ -46,8 +59,7 @@ esp_err_t bsp_battery_init(void) {
     if (cw_read(CW_REG_VERSION, &ver, 1) != 0) {
         ESP_LOGW(TAG, "CW2017 未应答 —— 用 bsp_i2c_scan() 确认 0x%02X 是否在线;"
                       "无电量计的板子可忽略本项", BSP_I2C_CW2017_ADDR);
-        i2c_master_bus_rm_device(s_dev);
-        s_dev = NULL;
+        cw_remove_device();
         return ESP_ERR_NOT_FOUND;
     }
     ESP_LOGI(TAG, "检测到 CW2017 VERSION=0x%02X", ver);

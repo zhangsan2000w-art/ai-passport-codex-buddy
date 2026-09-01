@@ -298,7 +298,8 @@ static void draw_status_bar(lv_layer_t *layer, const buddy_ui_snapshot_t *s)
         snprintf(clock_text, sizeof(clock_text), "--:--");
     }
     if (s->battery_available) {
-        snprintf(battery_text, sizeof(battery_text), "%u%%", (unsigned)s->battery_percent);
+        snprintf(battery_text, sizeof(battery_text), s->battery_estimated ? "~%u%%" : "%u%%",
+                 (unsigned)s->battery_percent);
     } else {
         snprintf(battery_text, sizeof(battery_text), "--%%");
     }
@@ -372,7 +373,7 @@ static void draw_info(lv_layer_t *layer, const buddy_ui_snapshot_t *s)
     text(layer, 174, 43, 52, COL_DIM, page, false, LV_TEXT_ALIGN_RIGHT);
     rule(layer, 14, 66, 212, COL_LINE);
     switch (p) {
-    case 0: snprintf(body, sizeof(body), "Codex 随身提醒伙伴\n\n任务完成时提醒你\n并显示当前工作状态\n\n每次重新刷入固件后\n请重新连接蓝牙"); break;
+    case 0: snprintf(body, sizeof(body), "Codex 随身提醒伙伴\n\n连接后自动同步\n时间和剩余电量\n\n卡片关机再开机后\n请在电脑重新选择连接"); break;
     case 1: snprintf(body, sizeof(body), "上键      切换页面\n下键      下一项或拒绝\n确定键    确认或允许\n长按确定  打开菜单"); break;
     case 2: snprintf(body, sizeof(body), "任务        %u\n运行中      %u\n待确认      %u\n\n积分        %llu", s->total, s->running, s->waiting, (unsigned long long)s->tokens); break;
     case 3: snprintf(body, sizeof(body), "名称\n%s\n\n使用者\n%s\n\n屏幕  240 x 320", s->name[0] ? s->name : "Codex Buddy", s->owner[0] ? s->owner : "-"); break;

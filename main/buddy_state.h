@@ -57,6 +57,7 @@ typedef struct {
     bool ble_connected;
     bool ble_encrypted;
     bool battery_available;
+    bool battery_estimated;
     bool passkey_visible;
     uint32_t passkey;
     uint8_t battery_percent;
