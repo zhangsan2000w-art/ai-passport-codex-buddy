@@ -13,5 +13,5 @@ if(CMAKE_PROGRAM_PATH)
         "-DCMAKE_PROGRAM_PATH=${CMAKE_PROGRAM_PATH}" APPEND)
 endif()
 
-set(PROJECT_VER "0.1.2")
+set(PROJECT_VER "0.1.4")
 project(Codex-Buddy)
