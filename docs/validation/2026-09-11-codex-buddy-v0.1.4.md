@@ -9,12 +9,13 @@
 - 安装后等待后台桥真正监听，区分程序故障与仍需用户完成的 Codex 信任/启用操作。
 - 增加 Windows、macOS、Linux 的独立 Hook 检查入口。
 - 保留 v0.1.3 的纯蓝牙固件、授权双音、完成三音和五档音量。
+- 安装进程固定控制台输出编码，避免中文提示在非中文 Windows 代码页下中断安装。
 
 ## 自动化与构建结果
 
 | 检查 | 结果 | 证据 |
 | --- | --- | --- |
-| 桌面桥与安装器单元测试 | PASS | 53/53；覆盖六 Hook 合并/校验、信任状态、冒烟失败中止安装、旧后台退出超时 |
+| 桌面桥与安装器单元测试 | PASS | 53/53，Windows、macOS、Linux 三种 CI 运行器各通过一次；覆盖六 Hook 合并/校验、信任状态、冒烟失败中止安装、旧后台退出超时 |
 | Python 字节码编译 | PASS | `compileall` 返回 0 |
 | 固件主机逻辑测试 | PASS | Debug 配置 12/12，包含声音与编排逻辑 |
 | ESP-IDF 全新构建 | PASS | ESP-IDF 5.5.3，项目版本 0.1.4，构建目录 `build-firmware-v014h` |
@@ -23,8 +24,8 @@
 | 声音模块链接 | PASS | 最终链接映射包含 `buddy_sound_logic.c.obj`、`buddy_sound_player.c.obj` 与 `bsp_audio.c.obj` |
 | 应用层 Wi-Fi 入口 | PASS | 主应用、桌面桥、安装脚本和发布工作流无 Wi-Fi/LAN 初始化、配网、发现或服务入口 |
 | Windows 独立包构建 | PASS | PyInstaller 6.22.2；安装器模块导入自检与打包 Hook 的 JSON 输入到事件写入均通过 |
-| macOS 独立包构建 | NOT RUN | 已提供原生 CI 构建配置，本机不能交叉生成 macOS 包 |
-| Linux 独立包构建 | NOT RUN | 已提供原生 CI 构建配置，本机未生成 Linux 包 |
+| macOS 独立包构建 | PASS | GitHub Actions macOS 运行器原生构建，包内自检通过（[run 34572132643](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/actions/runs/34572132643)） |
+| Linux 独立包构建 | PASS | GitHub Actions Ubuntu 运行器原生构建，包内自检通过（[run 34572132643](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/actions/runs/34572132643)） |
 
 ESP-IDF 的非最小化构建会编译其通用 Wi-Fi、网络和配网静态组件，蓝牙射频底层也会
 引用共享组件名称。这不等于应用启用了 Wi-Fi；Codex Buddy 主应用没有 Wi-Fi 初始化、
@@ -54,5 +55,6 @@ Codex 的 Hook 信任属于产品安全边界，安装器没有也不应自动�
 
 ## 发布边界
 
-本记录证明源码测试、固件构建、声音链接、Windows 独立打包和隔离 Hook 冒烟测试通过；
-不证明真实 Codex 信任流程、真实蓝牙硬件或三个操作系统的真机兼容验收已经完成。
+本记录证明源码测试（Windows、macOS、Linux 三种运行器）、固件构建、声音链接、Windows
+独立打包、macOS/Linux 原生 CI 打包和隔离 Hook 冒烟测试通过；不证明真实 Codex 信任
+流程、真实蓝牙硬件或三个操作系统的真机兼容验收已经完成。

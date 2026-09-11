@@ -44,30 +44,33 @@ Codex ← 本地 Hook ← 本机状态桥 ← 卡片审批按键
 
 ## 下载与系统支持
 
-各桌面系统当前可用的版本不同：
+v0.1.4 是第一个同时提供三个桌面系统安装包的版本，请下载与自己系统对应的 v0.1.4 包：
 
-| 系统 | 当前可用版本 | 下载入口 | 说明 |
+| 系统 | 发布包 | 下载入口 | 说明 |
 | --- | --- | --- | --- |
-| Windows 10/11 | v0.1.4 | [全部 Releases](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases) | 当前维护版本；v0.1.4 只优化 Windows 状态桥和 Hook 安装验收 |
-| macOS | v0.1.3 | [直接打开 v0.1.3 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.3) | v0.1.4 没有生成 macOS 安装包，继续使用 v0.1.3 |
-| Linux 桌面 | v0.1.3 | [直接打开 v0.1.3 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.3) | v0.1.4 没有生成 Linux 安装包，继续使用 v0.1.3 |
+| Windows 10/11 | `Codex-Buddy-Windows-v0.1.4.zip` | [v0.1.4 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.4) | 本机构建并完成包内自检；v0.1.4 的主要改动都在这一端 |
+| macOS | `Codex-Buddy-macOS-v0.1.4.zip` | [v0.1.4 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.4) | 由 GitHub Actions 在 macOS 运行器原生构建；未签名、未公证 |
+| Linux 桌面 | `Codex-Buddy-Linux-v0.1.4.tar.gz` | [v0.1.4 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.4) | 由 GitHub Actions 在 Ubuntu 运行器原生构建；是压缩包，不是 `.deb`/`.rpm`/AppImage |
 
-发布新的 v0.1.4 Release 不会删除 v0.1.3。macOS 和 Linux 用户可以继续从上面的
-v0.1.3 直达链接下载旧版附件。不要把 v0.1.3 的 macOS/Linux 文件改名成 v0.1.4；
-只有重新构建并完成对应系统验收后，才能发布新的版本号。
+v0.1.3 当时只发布了 Windows 包，没有可用的 macOS/Linux 附件。macOS 和 Linux 用户请直接
+使用 v0.1.4；旧版本仍保留在
+[Releases 页面](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases)，
+但不要把别的版本号的文件改名成 v0.1.4 混用。
 
 ### v0.1.4 的范围
 
-v0.1.4 的桌面端优化和发布范围仅限 Windows 状态桥，主要修复 Hook 文件写入成功可能
-被误认为实时状态链路已经可用的问题：
+v0.1.4 的桌面端变化集中在 Windows 状态桥，并首次把 macOS 和 Linux 安装包一起交付：
 
 - Windows 安装器校验六个 Codex 生命周期 Hook 的命令、路径、超时和唯一性。
 - 在隔离目录执行一次真实的 Hook 输入、程序运行和事件写入测试。
 - 等待后台桥真正开始监听，不把“启动命令已发送”当成成功。
-- 增加独立的 Windows Hook 检查入口。
-- 不绕过 Codex 的 Hook 信任和启用确认。
+- 三个系统都增加独立的 Hook 检查入口，不绕过 Codex 的 Hook 信任和启用确认。
+- 安装进程固定控制台输出编码，避免中文提示在非中文 Windows 代码页下中断安装。
+- macOS/Linux 安装包由 `.github/workflows/build-desktop-bridges.yml` 在对应系统的
+  GitHub 托管运行器上原生构建，并执行包内自检。
 
-macOS/Linux 只保留已有源码入口和后续构建配置，不属于 v0.1.4 的可下载、已验证交付物。
+macOS/Linux 安装包已完成构建与包内自检，但还没有在真实电脑上完成安装、蓝牙连接和卡片
+兼容性验收，详见“当前验证状态”。
 
 ### Release 附件分别是什么
 
@@ -75,28 +78,30 @@ macOS/Linux 只保留已有源码入口和后续构建配置，不属于 v0.1.4 
   写入。它不能代替电脑端状态桥。
 - `Codex-Buddy-Windows-版本号.zip`：Windows 电脑端安装包，包含控制器、后台状态桥、
   Hook 安装与检查程序以及独立运行环境。使用前必须完整解压。
+- `Codex-Buddy-macOS-版本号.zip`：macOS 电脑端安装包，包含 `Codex Buddy.app` 和四个
+  `.command` 脚本。未签名、未公证，首次打开需要手动放行。使用前必须完整解压。
+- `Codex-Buddy-Linux-版本号.tar.gz`：Linux 桌面端安装包，包含控制器、后台状态桥和四
+  个 `.sh` 脚本。它是压缩包，不是 `.deb`/`.rpm`/AppImage。
 - `Codex-Buddy-版本号-source.zip`：供开发者阅读、修改和重新构建的源码快照，普通用户
   安装时不需要。
 - `SHA256SUMS.txt`：发布文件的 SHA-256 校验清单，用于确认下载完整且版本没有混淆。
 
-普通 Windows 用户通常需要卡片固件、Windows 安装包和校验清单；不修改源码就不需要
-下载源码包。
+普通用户通常需要卡片固件、自己系统的安装包和校验清单；不修改源码就不需要下载源码包。
 
 ## 快速开始
 
 ### 1. 下载同一版本的文件
 
-Windows 用户下载 v0.1.4 的以下文件：
+从 [v0.1.4 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.4)
+下载自己系统的三个文件，全部保持 v0.1.4：
 
 ```text
-Codex-Buddy-v0.1.4-merged.bin
-Codex-Buddy-Windows-v0.1.4.zip
-SHA256SUMS.txt
+Windows：Codex-Buddy-v0.1.4-merged.bin、Codex-Buddy-Windows-v0.1.4.zip、SHA256SUMS.txt
+macOS：  Codex-Buddy-v0.1.4-merged.bin、Codex-Buddy-macOS-v0.1.4.zip、SHA256SUMS.txt
+Linux：  Codex-Buddy-v0.1.4-merged.bin、Codex-Buddy-Linux-v0.1.4.tar.gz、SHA256SUMS.txt
 ```
 
-macOS/Linux 用户暂时从
-[v0.1.3 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.3)
-下载对应系统的 v0.1.3 文件，不要混用 Windows v0.1.4 状态桥。
+不要混用不同版本号的固件、状态桥和脚本。
 
 ### 2. 刷入卡片固件
 
@@ -105,18 +110,21 @@ macOS/Linux 用户暂时从
 
 ### 3. 安装电脑端状态桥
 
-Windows v0.1.4 用户完整解压 ZIP，然后双击：
+完整解压自己系统的安装包，然后运行对应的安装入口：
 
-```text
-安装 Codex Buddy.cmd
-```
+| 系统 | 安装入口 | 日常重新连接入口 |
+| --- | --- | --- |
+| Windows | 双击 `安装 Codex Buddy.cmd` | `打开 Codex Buddy 控制器.cmd` |
+| macOS | 双击 `安装 Codex Buddy.command` | `打开 Codex Buddy 控制器.command` |
+| Linux 桌面 | `./install-codex-buddy.sh` | `./open-codex-buddy.sh` |
 
-安装器会复制独立运行程序、合并 Codex Buddy Hook、注册当前用户的后台自启动项，并打开
-控制器。它只管理 Codex Buddy 自己的 Hook，不应删除用户已有的其他 Hook。
+安装器会复制独立运行程序、验证六个 Hook、合并 Codex Buddy Hook、注册当前用户的后台
+自启动项，等待后台桥就绪后打开控制器。它只管理 Codex Buddy 自己的 Hook，不应删除用户
+已有的其他 Hook。
 
-macOS/Linux v0.1.3 用户按照
-[v0.1.3 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.3)
-中的说明安装。v0.1.3 没有 v0.1.4 新增的 Windows Hook 检查入口。
+macOS 首次运行可能被系统拦截，需要在“系统设置 → 隐私与安全性”中允许打开，并允许蓝牙
+权限。Linux 需要桌面会话、BlueZ 和可用的蓝牙适配器；首次运行脚本前可能需要
+`chmod +x *.sh`。
 
 ### 4. 连接卡片
 
@@ -126,7 +134,7 @@ macOS/Linux v0.1.3 用户按照
 4. 电脑第一次弹出蓝牙确认时允许配对，不需要输入六位数字。
 5. 等待控制器显示已连接；时间、使用者和设备状态会自动同步。
 
-### 5. Windows v0.1.4 确认 Hook
+### 5. 确认 Codex Hook 已信任并启用
 
 1. 完全退出并重新打开 Codex。
 2. 进入任意一个 Codex 任务。
@@ -144,13 +152,15 @@ macOS/Linux v0.1.3 用户按照
    Active
    ```
 
-6. 回到解压后的 Windows 安装包，双击：
+6. 回到解压后的安装包，运行 Hook 检查入口：
 
    ```text
-   检查 Codex Hook.cmd
+   Windows：检查 Codex Hook.cmd
+   macOS：  检查 Codex Hook.command
+   Linux：  ./check-codex-hook.sh
    ```
 
-7. 只有检查结果显示“实时状态链路已就绪”，才算 Windows 状态桥安装完成。
+7. 只有检查结果显示“实时状态链路已就绪”，才算状态桥安装完成。
 
 `/hooks` 是在 Codex 的任务输入框中输入，不是在 PowerShell、Windows 设置或浏览器中
 输入。
@@ -170,7 +180,7 @@ macOS/Linux v0.1.3 用户按照
 | --- | --- | --- |
 | 第一次使用 | 刷入固件、安装状态桥、扫描并连接卡片 | 需要 |
 | 卡片保持开机 | 正常使用 Codex，后台桥继续运行 | 通常不需要 |
-| 只重启 Codex | 重新打开 Codex；Windows v0.1.4 用户重新确认 Hook 状态 | 通常不需要 |
+| 只重启 Codex | 重新打开 Codex；v0.1.4 用户重新确认 Hook 状态 | 通常不需要 |
 | 卡片关机再开机 | 打开控制器，重新选择卡片并连接一次 | 需要 |
 | 完整重刷固件 | 删除电脑中的旧配对，再重新配对和连接 | 需要 |
 | 换电脑 | 在新电脑安装状态桥，再配对和连接卡片 | 第一次需要 |
@@ -213,10 +223,11 @@ macOS/Linux v0.1.3 用户按照
 2. 在电脑蓝牙设置中删除对应的 `Codex-*`。
 3. 重新扫描、配对并连接。
 
-### Windows 控制器能连接，但 Codex 状态不更新
+### 控制器能连接，但 Codex 状态不更新
 
-先按照“Windows v0.1.4 确认 Hook”完成 Codex 内的信任与启用，再运行
-`检查 Codex Hook.cmd`。控制器能够手动连接卡片，不代表 Codex Hook 已经工作。
+先按照“确认 Codex Hook 已信任并启用”完成 Codex 内的信任与启用，再运行安装包里的 Hook
+检查入口（Windows 为 `检查 Codex Hook.cmd`，macOS 为 `检查 Codex Hook.command`，
+Linux 为 `check-codex-hook.sh`）。控制器能够手动连接卡片，不代表 Codex Hook 已经工作。
 
 ### 卡片没有声音
 
@@ -230,8 +241,8 @@ macOS/Linux v0.1.3 用户按照
 | v0.1.0 | 中文界面、基础状态显示、Codex 工作与授权链路 |
 | v0.1.1 | 修复提示音，加入授权双音、完成三音和五档音量 |
 | v0.1.2 | 连接后自动同步时间、电量和设备状态 |
-| v0.1.3 | 固件回到纯蓝牙并保留完整声音；提供 Windows、macOS、Linux 发布包 |
-| v0.1.4 | 仅优化 Windows 状态桥；补齐 Hook 配置、自检、信任提示和后台桥就绪检查 |
+| v0.1.3 | 固件回到纯蓝牙并保留完整声音；该版本只发布了 Windows 安装包 |
+| v0.1.4 | 优化 Windows 状态桥，补齐 Hook 配置、自检、信任提示和后台桥就绪检查；首次同时发布 Windows、macOS、Linux 安装包 |
 
 详细变更见 [CHANGELOG.md](CHANGELOG.md)。历史发布文件保留在
 [Releases 页面](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases)。
@@ -240,11 +251,13 @@ macOS/Linux v0.1.3 用户按照
 
 v0.1.4 已完成以下自动化和构建检查：
 
-- Python 桌面桥与安装器测试 53/53。
+- Python 桌面桥与安装器测试 53/53，在 Windows、macOS、Linux 三种运行器上各执行一遍。
 - 固件主机 Debug 测试 12/12。
 - ESP-IDF 5.5.3 全量构建和合并固件校验。
 - 声音模块最终链接检查。
 - Windows 独立包自检和隔离 Hook 冒烟测试。
+- macOS/Linux 安装包由 GitHub Actions 原生构建并通过包内自检
+  （运行记录：[actions/runs/34572132643](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/actions/runs/34572132643)）。
 
 完整证据见
 [`docs/validation/2026-09-11-codex-buddy-v0.1.4.md`](docs/validation/2026-09-11-codex-buddy-v0.1.4.md)。
@@ -254,7 +267,8 @@ v0.1.4 已完成以下自动化和构建检查：
 - v0.1.4 在真实用户目录中的 Windows 安装、升级和 Hook 信任流程。
 - 真实 Codex 六类生命周期事件。
 - v0.1.4 真机刷写、声音、蓝牙连接和卡片审批。
-- macOS/Linux v0.1.4 安装包构建与真机兼容性。
+- macOS/Linux 安装包在真实电脑上的解压、安装、蓝牙连接和卡片审批兼容性。
+- macOS 安装包未签名、未公证，未验证 Gatekeeper 放行后的完整流程。
 - 20 次连接/断开循环和 30 分钟稳定性测试。
 
 因此本项目仍是社区开发预览版，不应描述为已经完成全平台、全硬件环境验证的量产固件。
