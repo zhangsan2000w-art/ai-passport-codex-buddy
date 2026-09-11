@@ -81,7 +81,7 @@ class HookHealthTests(unittest.TestCase):
             agent = root / "App-0.1.4" / "CodexBuddyAgent.exe"
             install_codex_hooks.install_executable(target, agent)
             self.assertEqual(
-                hook_health.packaged_agent_from_hooks(target), agent,
+                hook_health.packaged_agent_from_hooks(target), agent.resolve(),
             )
 
     def test_report_exit_code_distinguishes_user_trust_from_broken_install(self):

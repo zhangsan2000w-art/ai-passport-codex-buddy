@@ -48,7 +48,8 @@ class BleConnectionTests(unittest.IsolatedAsyncioTestCase):
         fake_bleak.BleakClient = FailingClient
         worker = BleWorker(lambda kind, value: events.append((kind, value)))
 
-        with patch.dict(sys.modules, {"bleak": fake_bleak}):
+        with patch("windows_buddy_controller.ble_client.sys.platform", "win32"), \
+                patch.dict(sys.modules, {"bleak": fake_bleak}):
             with self.assertRaisesRegex(RuntimeError, "Unreachable"):
                 await worker._connect("test-address")
 
