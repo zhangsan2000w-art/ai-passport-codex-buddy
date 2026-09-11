@@ -1,0 +1,97 @@
+name: Build desktop bridges
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: Windows
+          - os: macos-latest
+            platform: macOS
+          - os: ubuntu-latest
+            platform: Linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Linux desktop libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-tk
+      - name: Install bridge and packaging dependencies
+        run: >-
+          python -m pip install
+          -r tools/windows_buddy_controller/requirements.txt
+          -r tools/windows_buddy_controller/requirements-build.txt
+      - name: Run desktop bridge tests
+        env:
+          PYTHONPATH: tools
+        run: python -m unittest discover -s tools/windows_buddy_controller/tests -v
+      - name: Build bundled executables
+        run: >-
+          python -m PyInstaller --noconfirm --clean
+          --distpath desktop-dist --workpath desktop-build
+          tools/windows_buddy_controller/CodexBuddyDesktop.spec
+      - name: Add Windows launchers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Copy-Item -Path 'packaging/windows/*' -Destination 'desktop-dist/Codex-Buddy-Windows-v0.1.4' -Force
+          Copy-Item -LiteralPath 'README.md','LICENSE' -Destination 'desktop-dist/Codex-Buddy-Windows-v0.1.4' -Force
+      - name: Add macOS launchers
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p desktop-package/Codex-Buddy-macOS-v0.1.4
+          mv "desktop-dist/Codex Buddy.app" desktop-package/Codex-Buddy-macOS-v0.1.4/
+          cp packaging/macos/* desktop-package/Codex-Buddy-macOS-v0.1.4/
+          cp README.md LICENSE desktop-package/Codex-Buddy-macOS-v0.1.4/
+          chmod +x desktop-package/Codex-Buddy-macOS-v0.1.4/*.command
+          chmod +x "desktop-package/Codex-Buddy-macOS-v0.1.4/Codex Buddy.app/Contents/MacOS/CodexBuddyAgent"
+      - name: Add Linux launchers
+        if: runner.os == 'Linux'
+        run: |
+          cp packaging/linux/* desktop-dist/Codex-Buddy-Linux-v0.1.4/
+          cp README.md LICENSE desktop-dist/Codex-Buddy-Linux-v0.1.4/
+          chmod +x desktop-dist/Codex-Buddy-Linux-v0.1.4/*.sh desktop-dist/Codex-Buddy-Linux-v0.1.4/CodexBuddyAgent desktop-dist/Codex-Buddy-Linux-v0.1.4/CodexBuddyController
+      - name: Self-test Windows bundle
+        if: runner.os == 'Windows'
+        run: |
+          desktop-dist/Codex-Buddy-Windows-v0.1.4/CodexBuddyAgent.exe self-test
+          desktop-dist/Codex-Buddy-Windows-v0.1.4/CodexBuddyAgent.exe hook-smoke-test
+      - name: Self-test macOS bundle
+        if: runner.os == 'macOS'
+        run: |
+          "desktop-package/Codex-Buddy-macOS-v0.1.4/Codex Buddy.app/Contents/MacOS/CodexBuddyAgent" self-test
+          "desktop-package/Codex-Buddy-macOS-v0.1.4/Codex Buddy.app/Contents/MacOS/CodexBuddyAgent" hook-smoke-test
+      - name: Self-test Linux bundle
+        if: runner.os == 'Linux'
+        run: |
+          desktop-dist/Codex-Buddy-Linux-v0.1.4/CodexBuddyAgent self-test
+          desktop-dist/Codex-Buddy-Linux-v0.1.4/CodexBuddyAgent hook-smoke-test
+      - name: Archive Windows bundle
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -LiteralPath 'desktop-dist/Codex-Buddy-Windows-v0.1.4' -DestinationPath 'Codex-Buddy-Windows-v0.1.4.zip'
+      - name: Archive macOS bundle
+        if: runner.os == 'macOS'
+        run: ditto -c -k --sequesterRsrc --keepParent desktop-package/Codex-Buddy-macOS-v0.1.4 Codex-Buddy-macOS-v0.1.4.zip
+      - name: Archive Linux bundle
+        if: runner.os == 'Linux'
+        run: tar -C desktop-dist -czf Codex-Buddy-Linux-v0.1.4.tar.gz Codex-Buddy-Linux-v0.1.4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Codex-Buddy-${{ matrix.platform }}-v0.1.4
+          path: Codex-Buddy-*-v0.1.4.*
+          if-no-files-found: error
