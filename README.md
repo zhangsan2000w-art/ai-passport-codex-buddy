@@ -2,123 +2,277 @@
 
 ![Codex Buddy 社区封面](docs/assets/codex-buddy-cover.png)
 
-这是面向 FoloToy AI Passport 的中文 Codex 桌面提醒器。固件运行在 ESP32-C3 上，
-通过加密 BLE 与 Windows 本地控制器通信，在 240 × 320 屏幕上显示 Codex 任务状态、
-完成提醒、当前时间和剩余电量。项目参考了 FoloToy AI Passport 开源 BSP 与 Claude
-Buddy 的公开交互协议，但产品名称和用户界面均为 **Codex Buddy**。
+Codex Buddy 是面向 FoloToy AI Passport 的中文 Codex 桌面提醒器。它把 Codex 的工作、
+工具执行、授权和完成状态同步到卡片；需要授权时，可以在卡片或电脑上处理；任务完成后，
+卡片会显示动画并播放独立提示音。
 
 - 项目主页：<https://github.com/zhangsan2000w-art/ai-passport-codex-buddy>
-- 固件下载：<https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases>
+- 全部版本：<https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases>
+- 更新记录：[CHANGELOG.md](CHANGELOG.md)
 
-> Codex Buddy 是社区实验项目，并非 OpenAI 官方硬件产品。实时状态和审批通过
-> Codex 官方生命周期 Hook 接入；卡片仍使用 Claude Buddy 公开的 Hardware Buddy
-> 心跳与审批交互语义。
+> Codex Buddy 是社区实验项目，并非 OpenAI 官方硬件产品。项目通过本机状态桥和加密
+> BLE 传送事件，不提供公网服务，不需要额外的 OpenAI API Key。当前固件不包含 Wi-Fi
+> 配网、局域网发现或联网服务。
 
-## 版本迭代
+## 它能做什么
 
-Codex Buddy 从“能显示 Codex 状态”逐步迭代到“声音可靠、设置可用、连接后自动同步”的
-完整体验。本次发布不是只替换一个 BIN，而是同时更新固件、Windows 状态桥、卡片说明和
-使用文档。
-
-| 版本 | 从哪里出发 | 迭代到哪里 |
-| --- | --- | --- |
-| v0.1.0 | 只有基础中文界面和状态显示 | 打通工作、审批、完成状态以及电脑与卡片双端审批 |
-| v0.1.1 | 提醒能够触发，但声音偶尔不稳定，设置项也不够准确 | 修复审批与完成音效，加入五档音量，清理无效设置，并提供后台状态桥 |
-| **v0.1.2** | 时间需要额外同步，部分开机状态下电量可能长期显示 `--%`，文档没有说清关机后的连接限制 | **连接后自动同步时间并立即读取电量；电量计未就绪时自动重试；明确卡片关机再开机后需要重新选择并连接** |
-
-### v0.1.2 具体修改
-
-- 固件版本从 `0.1.1` 升级到 `0.1.2`，重新生成可从 `0x0` 直接刷入的合并 BIN。
-- Windows 控制器在每次连接成功后自动同步时间、使用者和当前状态，不再依赖手动同步。
-- 卡片连接时立即读取自身电量；读取失败会自动重新初始化并定时重试。
-- 只有电压可用时显示 `~50%` 这类近似电量，硬件完全无法读取时才显示 `--%`。
-- 卡片“关于”页、主 README 和控制器 README 同步写明真实连接规则。
-- 保留 v0.1.1 已修复的审批音效、完成音效、五档音量、蓝牙开关和双端审批能力。
-
-## 一眼看懂怎么用
-
-| 使用场景 | 需要做什么 | 控制器窗口 | 时间和电量 |
-| --- | --- | --- | --- |
-| 第一次使用 | 刷入最新 BIN，双击“安装 Codex Buddy”，打开控制器，扫描并选择 `Codex-*`，点击“连接” | 第一次必须打开 | 连接成功后自动同步，无需手动点击 |
-| 第一次蓝牙确认 | Windows 弹出配对确认时点击允许，不需要输入六位数字 | 保持打开直到显示已连接 | 连接完成后自动显示 |
-| 正常使用，卡片保持开机 | 正常打开 Codex 或 ChatGPT 使用即可 | 可以关闭，由后台桥继续运行 | 自动保持更新 |
-| 只关闭并重新打开 Codex | 直接重新打开 Codex；确认 Hook 已启用 | 通常不需要打开 | 不受影响 |
-| 卡片关机再开机 | 重新打开控制器，扫描或选择原来的卡片，再点击“连接” | 需要重新打开并连接一次 | 重新连接后自动恢复 |
-| 重新刷入完整固件 | 先删除 Windows 中旧的 `Codex-*` 配对，再重新扫描、配对和连接 | 必须重新打开 | 新连接建立后自动恢复 |
-| 换到另一台电脑 | 在新电脑安装一次 Codex Buddy 状态桥，再扫描、配对和连接卡片 | 第一次必须打开 | 连接成功后自动同步 |
-| Windows 只显示“已配对” | 仍要确认控制器或后台桥已经真正连接；只有系统配对不能传送 Codex 状态 | 未连接时需要打开 | 真正连接前不会更新 |
-
-最重要的规则只有两条：**蓝牙配对不等于状态桥已连接**；**连接成功后不需要再手动同步
-时间或电量**。
-
-## 怎么玩
-
-1. 首次连接卡片，并在电脑上安装 Codex Buddy 小助手。用蓝牙连接小卡片，若重刷卡片需重置，电脑需忘记后再连。
-2. 像平时一样打开 Codex、发送任务，BSOD 蓝屏小精灵会跟着进入工作状态。
-3. 遇到授权请求时，可在卡片上允许或拒绝，也可以继续在电脑端处理；先操作的一端生效。
-4. 任务完成后，小精灵会切换庆祝表情并播放专属完成提示。
-5. 卡片保持开机时可以关闭控制器窗口，由后台桥继续运行；卡片关机再开机后，需要
-   重新打开控制器，选择自己的卡片并点击连接。
-
-等待、工作、授权和完成都有不同的表情与提示，让原本藏在电脑里的 AI 进度变得
-一眼可见、随手可管，也多了一点像素宠物的陪伴感。
+- 在卡片上显示 Codex 的开始、工具执行、等待授权和任务完成状态。
+- 支持电脑与卡片双端审批，同一个请求只接受一次有效决定。
+- 连接后自动同步本地时间，并显示卡片自身读取的电量。
+- 授权请求播放短促双音，任务完成播放上行三音。
+- 音量支持 0%、25%、50%、75%、100% 五档并持久保存。
+- 60 秒无按键后自动息屏，按键唤醒时不会顺带触发操作。
+- 提供待机、工作、等待、完成和失败状态的 BSOD 像素宠物。
+- 支持亮度、音量、蓝牙开关、设备端解除绑定和恢复出厂确认。
 
 ![Codex Buddy 真机运行画面](docs/assets/codex-buddy-runtime-capture.png)
 
+更完整的硬件能力与可开发方向见
+[`docs/PRODUCT_CAPABILITIES.zh_CN.md`](docs/PRODUCT_CAPABILITIES.zh_CN.md)。该文档描述硬件
+本身能做什么，不代表 Codex Buddy 当前已经启用了所有硬件能力。
+
 ## 工作方式
 
-本项目不调用额外的 OpenAI API，也不要求填写 API Key。数据只在本机与卡片之间传递：
-
 ```text
-Codex / ChatGPT → 本地 Hook → Windows 本地桥 → 加密 BLE → Codex Buddy
-Codex / ChatGPT ← 本地 Hook ← Windows 本地桥 ← 卡片审批按键
+Codex → 本地 Hook → 本机状态桥 → 加密 BLE → Codex Buddy
+Codex ← 本地 Hook ← 本机状态桥 ← 卡片审批按键
 ```
 
-蓝牙配对只建立电脑与卡片之间的安全连接；Windows 本地桥仍需运行，才能把 Codex
-状态同步到卡片。桥接程序只监听本机回环地址，不提供公网服务。
+卡片不能只靠蓝牙配对直接读取 Codex 状态。每台电脑都需要安装一次对应系统的本地状态
+桥，并让状态桥真正连接卡片。系统显示“已配对”只表示两端建立了安全关系，不表示 Codex
+状态链路已经接通。
 
-## 当前状态
+## 下载与系统支持
 
-这是可编译、可测试的开发者预览版。固件、Windows 控制器、实时状态桥和双端审批均已
-实现；自动化测试覆盖协议、状态、BLE 策略、设置、音效逻辑和本地 Hook。不同批次卡片
-仍应完成真机验证。20 次连接/断开循环和 30 分钟稳定性测试尚未作为公开发布门槛完成，
-因此请勿把本仓库描述为量产固件。
+各桌面系统当前可用的版本不同：
 
-## 已实现功能
+| 系统 | 当前可用版本 | 下载入口 | 说明 |
+| --- | --- | --- | --- |
+| Windows 10/11 | v0.1.4 | [全部 Releases](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases) | 当前维护版本；v0.1.4 只优化 Windows 状态桥和 Hook 安装验收 |
+| macOS | v0.1.3 | [直接打开 v0.1.3 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.3) | v0.1.4 没有生成 macOS 安装包，继续使用 v0.1.3 |
+| Linux 桌面 | v0.1.3 | [直接打开 v0.1.3 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.3) | v0.1.4 没有生成 Linux 安装包，继续使用 v0.1.3 |
 
-- 全中文设备界面、中文按键说明和中文 Windows 控制器。
-- 内置 4,342 字形的精简中文字库，覆盖全部设备界面和常用一级汉字；提醒摘要中的
-  生僻字若不在字库中会回退为 `?`。
-- BLE 名称为 `Codex-<MAC 后缀>`，首次连接通过 Windows Just Works 建立加密绑定，
-  不需要输入配对码。
-- 实时接收 Codex 的开始、工具执行、等待审批和完成状态，在卡片上同步显示。
-- 真实审批支持电脑控制器与卡片同时操作；先提交的一端生效，另一端立即失效。
-- 状态栏固定显示 BLE 状态、本地时间和电量百分比；数据不可用时显示占位符。
-- 60 秒无按键操作后自动关闭屏幕背光；短按或长按任意功能键只唤醒屏幕，
-  不会顺带触发翻页、菜单或审批。
-- 默认宠物为 BSOD（tiny blue-screen gremlin），使用适合 ESP32-C3 的程序化像素绘制，
-  提供待机、工作、等待、完成、失败和互动表情，不嵌入桌面版大型精灵图。
-- 空闲、工作中、待确认、完成和休眠状态；设备信息、宠物、帮助和设置页面。
-- 审批请求使用短促提醒双音，任务完成使用上行完成三音；音量可在设置页选择
-  0%、25%、50%、75% 或 100%，0% 为静音，重新开机仍会保留。
-- 三键操作、亮度设置、音量设置、蓝牙开关、设备端解除绑定和恢复出厂确认。
-  设置页不展示当前固件未使用的无线网络、指示灯和屏幕旋转选项。
-- 本地桥只监听 `127.0.0.1`，不转发用户输入；工具提示与完成摘要会按固定字节数截断。
+发布新的 v0.1.4 Release 不会删除 v0.1.3。macOS 和 Linux 用户可以继续从上面的
+v0.1.3 直达链接下载旧版附件。不要把 v0.1.3 的 macOS/Linux 文件改名成 v0.1.4；
+只有重新构建并完成对应系统验收后，才能发布新的版本号。
 
-更完整的硬件能力、接口成熟度与可开发方向见
-[`docs/PRODUCT_CAPABILITIES.zh_CN.md`](docs/PRODUCT_CAPABILITIES.zh_CN.md)。
+### v0.1.4 的范围
 
-## 按键
+v0.1.4 的桌面端优化和发布范围仅限 Windows 状态桥，主要修复 Hook 文件写入成功可能
+被误认为实时状态链路已经可用的问题：
+
+- Windows 安装器校验六个 Codex 生命周期 Hook 的命令、路径、超时和唯一性。
+- 在隔离目录执行一次真实的 Hook 输入、程序运行和事件写入测试。
+- 等待后台桥真正开始监听，不把“启动命令已发送”当成成功。
+- 增加独立的 Windows Hook 检查入口。
+- 不绕过 Codex 的 Hook 信任和启用确认。
+
+macOS/Linux 只保留已有源码入口和后续构建配置，不属于 v0.1.4 的可下载、已验证交付物。
+
+### Release 附件分别是什么
+
+- `Codex-Buddy-版本号-merged.bin`：刷入 AI Passport 卡片的完整固件，从地址 `0x0`
+  写入。它不能代替电脑端状态桥。
+- `Codex-Buddy-Windows-版本号.zip`：Windows 电脑端安装包，包含控制器、后台状态桥、
+  Hook 安装与检查程序以及独立运行环境。使用前必须完整解压。
+- `Codex-Buddy-版本号-source.zip`：供开发者阅读、修改和重新构建的源码快照，普通用户
+  安装时不需要。
+- `SHA256SUMS.txt`：发布文件的 SHA-256 校验清单，用于确认下载完整且版本没有混淆。
+
+普通 Windows 用户通常需要卡片固件、Windows 安装包和校验清单；不修改源码就不需要
+下载源码包。
+
+## 快速开始
+
+### 1. 下载同一版本的文件
+
+Windows 用户下载 v0.1.4 的以下文件：
+
+```text
+Codex-Buddy-v0.1.4-merged.bin
+Codex-Buddy-Windows-v0.1.4.zip
+SHA256SUMS.txt
+```
+
+macOS/Linux 用户暂时从
+[v0.1.3 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.3)
+下载对应系统的 v0.1.3 文件，不要混用 Windows v0.1.4 状态桥。
+
+### 2. 刷入卡片固件
+
+使用 FoloToy Web Flasher 或其他兼容工具，把对应版本的合并固件从地址 `0x0` 写入卡片。
+完整重刷后，建议同时删除电脑中的旧蓝牙配对，再重新配对和连接。
+
+### 3. 安装电脑端状态桥
+
+Windows v0.1.4 用户完整解压 ZIP，然后双击：
+
+```text
+安装 Codex Buddy.cmd
+```
+
+安装器会复制独立运行程序、合并 Codex Buddy Hook、注册当前用户的后台自启动项，并打开
+控制器。它只管理 Codex Buddy 自己的 Hook，不应删除用户已有的其他 Hook。
+
+macOS/Linux v0.1.3 用户按照
+[v0.1.3 Release](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases/tag/v0.1.3)
+中的说明安装。v0.1.3 没有 v0.1.4 新增的 Windows Hook 检查入口。
+
+### 4. 连接卡片
+
+1. 打开 Codex Buddy 控制器。
+2. 点击“扫描”。
+3. 选择自己的 `Codex-*` 设备并点击“连接”。
+4. 电脑第一次弹出蓝牙确认时允许配对，不需要输入六位数字。
+5. 等待控制器显示已连接；时间、使用者和设备状态会自动同步。
+
+### 5. Windows v0.1.4 确认 Hook
+
+1. 完全退出并重新打开 Codex。
+2. 进入任意一个 Codex 任务。
+3. 点击任务页面底部的输入框。
+4. 输入下面的命令，然后按回车：
+
+   ```text
+   /hooks
+   ```
+
+5. Codex 会打开 Hook 管理列表。找到六个 Codex Buddy Hook，确认每一个都同时显示：
+
+   ```text
+   Trusted
+   Active
+   ```
+
+6. 回到解压后的 Windows 安装包，双击：
+
+   ```text
+   检查 Codex Hook.cmd
+   ```
+
+7. 只有检查结果显示“实时状态链路已就绪”，才算 Windows 状态桥安装完成。
+
+`/hooks` 是在 Codex 的任务输入框中输入，不是在 PowerShell、Windows 设置或浏览器中
+输入。
+
+### 6. 验证完整链路
+
+在 Codex 中发送一个任务，依次确认：
+
+1. 卡片进入工作状态。
+2. 工具执行状态能够更新。
+3. 出现授权请求时，卡片播放授权双音并可以允许或拒绝。
+4. 任务完成后，卡片显示完成状态并播放上行三音。
+
+## 日常使用
+
+| 场景 | 用户要做什么 | 是否打开控制器 |
+| --- | --- | --- |
+| 第一次使用 | 刷入固件、安装状态桥、扫描并连接卡片 | 需要 |
+| 卡片保持开机 | 正常使用 Codex，后台桥继续运行 | 通常不需要 |
+| 只重启 Codex | 重新打开 Codex；Windows v0.1.4 用户重新确认 Hook 状态 | 通常不需要 |
+| 卡片关机再开机 | 打开控制器，重新选择卡片并连接一次 | 需要 |
+| 完整重刷固件 | 删除电脑中的旧配对，再重新配对和连接 | 需要 |
+| 换电脑 | 在新电脑安装状态桥，再配对和连接卡片 | 第一次需要 |
+| 电脑只显示“已配对” | 继续在控制器内点击连接 | 需要 |
+
+连接成功后，时间和电量会自动更新，不需要手动同步。
+
+## 卡片操作
+
+### 声音设置
+
+长按确定键打开菜单，进入“设置”，选中“声音”，按确定键在五档音量间切换：
+
+```text
+0% → 25% → 50% → 75% → 100% → 0%
+```
+
+授权音是短促双音，完成音是上行三音。0% 为静音，调整后的音量会立即保存。
+
+### 按键
 
 - 上键：切换主页、宠物和信息页；待确认页面用于滚动。
 - 下键：切换子页面；待确认页面用于拒绝。
 - 确定键：确认当前操作；待确认页面用于单次允许。
 - 长按确定键：打开或关闭菜单。
-- 屏幕关闭时：上、下、确定任意键的短按或长按均只唤醒屏幕。
+- 屏幕关闭时：任意功能键的短按或长按均只唤醒屏幕。
+
+## 常见问题
+
+### 系统显示已配对，但卡片没有 Codex 状态
+
+蓝牙配对不等于状态桥已经连接。打开控制器，选择自己的 `Codex-*` 设备并点击“连接”，
+等待控制器明确显示已连接。
+
+### 重刷后能够扫描，但连接超时
+
+电脑和卡片可能保留了不同的旧绑定密钥：
+
+1. 在卡片进入“设置 → 重置 → 取消配对”。
+2. 在电脑蓝牙设置中删除对应的 `Codex-*`。
+3. 重新扫描、配对并连接。
+
+### Windows 控制器能连接，但 Codex 状态不更新
+
+先按照“Windows v0.1.4 确认 Hook”完成 Codex 内的信任与启用，再运行
+`检查 Codex Hook.cmd`。控制器能够手动连接卡片，不代表 Codex Hook 已经工作。
+
+### 卡片没有声音
+
+进入“设置 → 声音”，确认音量不是 0%。授权和完成使用不同提示音；若只有其中一种不响，
+应分别测试授权请求与任务完成事件。
+
+## 版本迭代
+
+| 版本 | 主要变化 |
+| --- | --- |
+| v0.1.0 | 中文界面、基础状态显示、Codex 工作与授权链路 |
+| v0.1.1 | 修复提示音，加入授权双音、完成三音和五档音量 |
+| v0.1.2 | 连接后自动同步时间、电量和设备状态 |
+| v0.1.3 | 固件回到纯蓝牙并保留完整声音；提供 Windows、macOS、Linux 发布包 |
+| v0.1.4 | 仅优化 Windows 状态桥；补齐 Hook 配置、自检、信任提示和后台桥就绪检查 |
+
+详细变更见 [CHANGELOG.md](CHANGELOG.md)。历史发布文件保留在
+[Releases 页面](https://github.com/zhangsan2000w-art/ai-passport-codex-buddy/releases)。
+
+## 当前验证状态
+
+v0.1.4 已完成以下自动化和构建检查：
+
+- Python 桌面桥与安装器测试 53/53。
+- 固件主机 Debug 测试 12/12。
+- ESP-IDF 5.5.3 全量构建和合并固件校验。
+- 声音模块最终链接检查。
+- Windows 独立包自检和隔离 Hook 冒烟测试。
+
+完整证据见
+[`docs/validation/2026-09-11-codex-buddy-v0.1.4.md`](docs/validation/2026-09-11-codex-buddy-v0.1.4.md)。
+
+以下项目不能由编译或 Mock 测试代替，本轮仍为 `NOT RUN`：
+
+- v0.1.4 在真实用户目录中的 Windows 安装、升级和 Hook 信任流程。
+- 真实 Codex 六类生命周期事件。
+- v0.1.4 真机刷写、声音、蓝牙连接和卡片审批。
+- macOS/Linux v0.1.4 安装包构建与真机兼容性。
+- 20 次连接/断开循环和 30 分钟稳定性测试。
+
+因此本项目仍是社区开发预览版，不应描述为已经完成全平台、全硬件环境验证的量产固件。
+
+## 从源码运行桌面桥
+
+发布包用户不需要 Python。只有开发或修改源码时才需要 Python 3.11：
+
+```powershell
+py -3.11 -m venv .venv-buddy
+.\.venv-buddy\Scripts\python.exe -m pip install -r tools\windows_buddy_controller\requirements.txt
+$env:PYTHONPATH = "tools"
+.\.venv-buddy\Scripts\python.exe -m windows_buddy_controller.app
+```
 
 ## 编译固件
 
-需要 ESP-IDF 5.5.3：
+使用 ESP-IDF 5.5.3，并设置目标为 ESP32-C3：
 
 ```powershell
 idf.py set-target esp32c3
@@ -130,136 +284,30 @@ python -m esptool --chip esp32c3 merge_bin -o build\merged-binary.bin -f raw `
   0x10000 build\Codex-Buddy.bin
 ```
 
-普通烧录可使用 `idf.py flash monitor`。如需网页刷机，把生成的合并固件
-`build\merged-binary.bin` 交给 FoloToy 的 Web Flasher；也可以按构建日志里的地址分别
-上传 bootloader、partition table 和 application 三个二进制文件。这里显式使用
-`--flash_size 4MB`，可避开 ESP-IDF 5.5.3 的 `merge-bin` 与部分 esptool 版本对
-`--flash_size detect` 处理不一致的问题；该镜像头也能在容量更大的兼容批次上启动。
-
-> 每次重新刷入完整固件后，都应重新建立蓝牙连接：先从 Windows“蓝牙和设备”中删除
-> 原来的 `Codex-*`，再打开 Codex Buddy 控制器重新扫描并连接。仅显示“已配对”不代表
-> 新固件已经与电脑重新建立可用连接。
-
-## Windows 控制器
-
-首次安装可直接双击 [`安装 Codex Buddy.cmd`](安装%20Codex%20Buddy.cmd)。脚本会创建项目
-专用 Python 环境、安装 BLE 依赖、合并 Codex Hook，并注册当前用户的后台状态桥。
-卸载时双击 [`卸载 Codex Buddy.cmd`](卸载%20Codex%20Buddy.cmd)，只移除后台启动项和
-本项目的 Hook，不删除固件、蓝牙配对或其他 Codex 配置。
-
-需要手动安装时，在仓库根目录执行：
-
-```powershell
-py -3.11 -m venv .venv-buddy
-.\.venv-buddy\Scripts\python.exe -m pip install -r tools\windows_buddy_controller\requirements.txt
-.\.venv-buddy\Scripts\python.exe -m tools.windows_buddy_controller.app
-```
-
-控制器中点击“扫描”，选择 `Codex-*` 并连接；首次连接若 Windows 显示配对确认，允许
-即可，不需要在卡片或电脑上输入数字。
-控制器会在每次连接成功后自动同步本地时间、使用者并读取设备状态，随后每 10 秒发送
-一次状态保活，不需要再手动点击同步。电量由卡片自身读取；固件会在连接时立即刷新，
-若电量计开机时尚未就绪，还会自动重新初始化并继续定时重试。
-当电量计暂时只能提供电压而不能提供剩余百分比时，状态栏会显示带 `~` 的近似值，
-例如 `~50%`；硬件读数完全不可用时才显示 `--%`。
-
-如果重新刷机后仍能扫描、Windows 也显示“已配对”，但连接在 60 秒后超时，通常是两端
-保留的旧绑定密钥不一致。先在卡片进入“设置 → 重置 → 取消配对”，再从 Windows
-“蓝牙和设备”中删除对应的 `Codex-*` 设备，然后重新配对。
-
-首次成功连接后，双击 [`安装后台自动连接.cmd`](安装后台自动连接.cmd)。此后 Windows
-登录时会无窗口启动 Codex Buddy 状态桥。卡片保持开机且连接未被重置时，日常不需要
-打开控制器；短暂断线时后台桥也会尝试恢复。受当前真机连接行为限制，卡片关机再开机
-后仍需要打开控制器，重新扫描或选择自己的 `Codex-*`，再点击“连接”。连接成功后即可
-关闭窗口，时间、电量和 Codex 状态都会自动同步，不需要点击手动同步。双击
-[`卸载后台自动连接.cmd`](卸载后台自动连接.cmd) 只移除当前用户的自动启动项，不会
-删除蓝牙配对或固件。
-
-### 在另一台 Windows 电脑使用
-
-卡片不能只靠蓝牙配对直接读取 Codex 状态；每台电脑都需要安装一次本地状态桥。推荐按
-下面的顺序操作：
-
-1. 下载或克隆本仓库，双击 [`安装 Codex Buddy.cmd`](安装%20Codex%20Buddy.cmd)。
-2. 安装完成后打开控制器，点击“扫描”，选择当前卡片的 `Codex-*` 并连接。
-3. Windows 出现配对确认时选择允许；连接成功后可以关闭控制器窗口。
-4. 安装器注册的后台状态桥会在 Windows 登录后无窗口启动。卡片保持开机时可继续使用；
-   如果卡片关机再开机，请重新打开控制器，选择卡片并点击“连接”。
-5. 连接后不需要手动同步时间或电量。完全退出并重新打开 Codex，发送一个任务，确认
-   卡片依次显示工作、授权和完成状态。
-
-如果这台电脑此前连接过刷机前的同一张卡片，请先删除 Windows 中旧的 `Codex-*` 配对，
-再执行第 2 步。状态桥不调用额外的 OpenAI API，也不需要填写 API Key。
-
-## 连接当前 Codex
-
-先运行一次安装器。它会把 Codex Buddy 条目合并进用户级 `.codex/hooks.json`，保留
-已有 Hook，并在修改已有文件前创建带时间戳的备份：
-
-```powershell
-.\.venv-buddy\Scripts\python.exe -m tools.windows_buddy_controller.install_codex_hooks install
-```
-
-然后重启 Codex，并在出现 Hook 信任提示时确认。保持手动控制器或后台桥运行并连接卡片：
-
-- 发送提示后，卡片立即显示“Codex 正在处理任务”。
-- 工具执行时同步工具名称和经过截断的提示。
-- 需要审批时，电脑控制器和卡片显示同一个请求。电脑点击“一次允许/拒绝”，或卡片
-  按 `OK`/`DOWN`；先到的有效决定生效，重复、过期或编号不匹配的决定会被拒绝。
-- 控制器未运行或本地桥不可用时，Hook 不做决定，Codex 继续显示自己的原生审批提示。
-- Codex 完成后同步明确的完成状态，显示完成动画并播放完成音效。
-
-卸载只删除 Codex Buddy 自己的 Hook 条目：
-
-```powershell
-.\.venv-buddy\Scripts\python.exe -m tools.windows_buddy_controller.install_codex_hooks uninstall
-```
-
-旧版 `config.toml` 的 `notify` 完成提醒仍可兼容，但安装实时 Hook 后建议移除旧 `notify`，
-避免同一完成事件被发送两次。
+网页刷机使用合并后的 BIN，并从 `0x0` 写入。
 
 ## 测试
-
-Windows 控制器测试不需要开发板：
 
 ```powershell
 $env:PYTHONPATH = "tools"
 python -m unittest discover -s tools\windows_buddy_controller\tests -v
-```
 
-C 固件逻辑测试与正式构建：
-
-```powershell
 cmake -S tests -B build-host
 cmake --build build-host
 ctest --test-dir build-host -C Debug --output-on-failure
 idf.py build
 ```
 
-## 上板验收
-
-- `Codex-*` 能被 Windows 扫描，首次确认、加密连接、重连和解除绑定正常。
-- 中文无乱码、无截断；主页、状态栏、菜单、设置、确认页在 240 × 320 屏幕上可读。
-- 连接成功后时间会自动同步，电量会立即读取并持续刷新；电量计暂时未就绪时会自动
-  重试，硬件持续不可用时才显示 `--%`，不会由电脑伪造电量。
-- 60 秒无按键后背光关闭，三枚按键的短按和长按都能唤醒且不误操作。
-- 开始、工具、审批和完成事件能从 Codex 到达 Windows 控制器，再到卡片。
-- 审批与完成音效不同；音量五档可调，设为 0% 后均静音，重新开机仍保持设置。
-- 后台桥能无窗口自动启动；卡片保持开机时持续工作。卡片关机再开机后，按当前真机
-  行为重新选择并连接，且不会误连其他卡片。
-- 同一审批可从电脑或卡片处理且只生效一次；控制器关闭时能回退到 Codex 原生审批。
-- 至少完成 20 次连接/断开和 30 分钟连接测试，记录堆内存、看门狗与 BLE 错误。
-
-没有连接真实开发板的检查必须标记为 `NOT RUN`，不能用编译通过代替硬件验收。
-
 ## 目录
 
 ```text
 components/bsp/                    FoloToy AI Passport 板级驱动
-main/                              Codex Buddy 固件、状态、BLE、协议和中文 UI
+main/                              Codex Buddy 固件、状态、BLE、声音和中文 UI
 tests/                             主机端 C 测试
-tools/windows_buddy_controller/    Windows 中文控制器与 Codex 本地通知桥
-docs/                              硬件能力说明与历史设计记录
+tools/windows_buddy_controller/    桌面控制器、本地状态桥和打包入口
+packaging/                         各系统安装、打开、检查和卸载脚本
+.github/workflows/                 自动化测试与原生打包流程
+docs/                              硬件能力说明和验证记录
 ```
 
 本项目采用 [`MIT License`](LICENSE)。协议来源与上游许可证归属见 [`NOTICE`](NOTICE)。

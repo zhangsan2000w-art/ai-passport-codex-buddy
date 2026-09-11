@@ -1,1 +1,1 @@
-"""Windows controller for Codex Buddy devices."""
+"""Cross-platform desktop controller for Codex Buddy devices."""

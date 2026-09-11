@@ -62,6 +62,12 @@ class BleConnectionTests(unittest.IsolatedAsyncioTestCase):
             ("status", "连接初始化失败，已释放设备，可重新扫描"), events
         )
 
+        with patch("windows_buddy_controller.ble_client.sys.platform", "darwin"), \
+                patch.dict(sys.modules, {"bleak": fake_bleak}):
+            with self.assertRaisesRegex(RuntimeError, "Unreachable"):
+                await worker._connect("mac-test-address")
+        self.assertNotIn("winrt", FailingClient.last.options)
+
 
 if __name__ == "__main__":
     unittest.main()

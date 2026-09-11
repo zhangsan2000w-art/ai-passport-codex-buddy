@@ -1,4 +1,4 @@
-"""Invisible Windows bridge with automatic Codex Buddy BLE reconnect."""
+"""Invisible desktop bridge with automatic Codex Buddy BLE reconnect."""
 
 from __future__ import annotations
 

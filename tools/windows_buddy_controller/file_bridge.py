@@ -1,4 +1,4 @@
-"""Shared, loopback-free transport for Codex Hook events on Windows.
+"""Shared, loopback-free transport for Codex Hook events on desktop systems.
 
 Codex Hooks may run in a sandbox whose network namespace cannot reach a desktop
 controller on 127.0.0.1.  Small atomically-renamed JSON files under the user's
@@ -11,9 +11,15 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import time
 import uuid
 from typing import Dict, Iterable, Optional
+
+if __package__:
+    from .platform_paths import product_data_dir
+else:
+    from platform_paths import product_data_dir
 
 
 MAX_BRIDGE_BYTES = 8192
@@ -25,9 +31,11 @@ def default_bridge_dir() -> Path:
     override = os.environ.get("CODEX_BUDDY_BRIDGE_DIR")
     if override:
         return Path(override)
-    # Keep the spool inside the installed Buddy workspace. Codex's Windows
-    # sandbox can virtualize or isolate %TEMP%, while this project path is an
-    # explicit writable root for the Hook command and the desktop controller.
+    if getattr(sys, "frozen", False):
+        return product_data_dir() / ("." + BRIDGE_VERSION)
+    # In source mode keep the spool inside the Buddy workspace. Sandboxed
+    # Codex processes can virtualize a system temporary directory, while this
+    # project path is shared with the desktop controller.
     return Path(__file__).resolve().parents[2] / ("." + BRIDGE_VERSION)
 
 

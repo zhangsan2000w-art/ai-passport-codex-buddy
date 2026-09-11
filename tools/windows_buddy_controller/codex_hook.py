@@ -2,7 +2,7 @@
 
 The command reads one official Codex Hook JSON object from stdin.  Informational
 events are sent over loopback UDP.  PermissionRequest uses a loopback TCP
-request so the Hook can wait for the first decision made on the Windows UI or
+request so the Hook can wait for the first decision made on the desktop UI or
 the physical Buddy without exposing a listener outside this computer.
 """
 

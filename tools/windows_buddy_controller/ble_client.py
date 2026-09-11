@@ -1,8 +1,9 @@
-"""Threaded Bleak client for the Windows Codex Buddy bridge."""
+"""Threaded Bleak client for the Codex Buddy desktop bridge."""
 
 import asyncio
 from dataclasses import dataclass
 import queue
+import sys
 import threading
 from typing import Callable, List, Optional
 
@@ -115,19 +116,17 @@ class BleWorker:
         await self._disconnect()
         self._callback(
             "status",
-            "正在连接，首次使用请确认 Windows 蓝牙配对...",
+            "正在连接，首次使用请确认系统蓝牙配对...",
         )
         target = self._discovered.get(address, address)
-        self._client = BleakClient(
-            target,
-            disconnected_callback=self._on_disconnect,
-            pair=True,
-            timeout=60.0,
+        options = {"pair": True, "timeout": 60.0}
+        if sys.platform == "win32":
             # Firmware iterations can keep the same UUIDs while Windows holds
-            # stale characteristic handles.  Enumerating the live GATT table
-            # prevents start_notify() from reopening an obsolete handle such
-            # as 0x0011 and reporting it as unreachable.
-            winrt={"use_cached_services": False},
+            # stale characteristic handles. Enumerating the live GATT table
+            # prevents start_notify() from reopening an obsolete handle.
+            options["winrt"] = {"use_cached_services": False}
+        self._client = BleakClient(
+            target, disconnected_callback=self._on_disconnect, **options
         )
         try:
             await self._client.connect()

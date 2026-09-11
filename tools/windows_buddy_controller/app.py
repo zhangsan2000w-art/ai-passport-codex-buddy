@@ -1,4 +1,4 @@
-"""Chinese Windows controller and local Codex notification bridge."""
+"""Chinese desktop controller and local Codex notification bridge."""
 
 import json
 import queue

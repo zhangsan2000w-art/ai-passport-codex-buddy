@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import shutil
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 
 HOOK_EVENTS = (
@@ -26,9 +26,7 @@ def _quoted(path: Path) -> str:
     return '"%s"' % str(path)
 
 
-def build_hook_groups(python_executable: Path,
-                      hook_script: Path) -> Dict[str, List[Dict[str, object]]]:
-    command = "%s %s" % (_quoted(python_executable.resolve()), _quoted(hook_script.resolve()))
+def _groups_for_command(command: str) -> Dict[str, List[Dict[str, object]]]:
     # Codex Desktop uses the configured PowerShell on Windows. A command that
     # begins with a quoted executable path is parsed as a string expression;
     # the call operator is required to execute it and preserve Hook stdin.
@@ -55,6 +53,17 @@ def build_hook_groups(python_executable: Path,
     }
 
 
+def build_hook_groups(python_executable: Path,
+                      hook_script: Path) -> Dict[str, List[Dict[str, object]]]:
+    command = "%s %s" % (_quoted(python_executable.resolve()), _quoted(hook_script.resolve()))
+    return _groups_for_command(command)
+
+
+def build_executable_hook_groups(
+        executable: Path) -> Dict[str, List[Dict[str, object]]]:
+    return _groups_for_command("%s hook" % _quoted(executable.resolve()))
+
+
 def _is_buddy_group(group: object) -> bool:
     if not isinstance(group, dict) or not isinstance(group.get("hooks"), list):
         return False
@@ -63,7 +72,8 @@ def _is_buddy_group(group: object) -> bool:
             continue
         command = str(handler.get("commandWindows") or handler.get("command") or "")
         status = str(handler.get("statusMessage") or "")
-        if "codex_hook.py" in command and "Codex Buddy" in status:
+        if ("Codex Buddy" in status and
+                ("codex_hook.py" in command or "CodexBuddyAgent" in command)):
             return True
     return False
 
@@ -102,7 +112,7 @@ def remove_hooks(existing: object) -> Dict[str, Any]:
     return document
 
 
-def _read_document(target: Path) -> Dict[str, Any]:
+def read_document(target: Path) -> Dict[str, Any]:
     if not target.exists():
         return {}
     payload = json.loads(target.read_text(encoding="utf-8"))
@@ -125,32 +135,98 @@ def _write_document(target: Path, document: Dict[str, Any]) -> None:
     temporary.replace(target)
 
 
+def buddy_handler_locations(
+        document: object) -> Dict[str, Tuple[int, int, Dict[str, object]]]:
+    locations: Dict[str, Tuple[int, int, Dict[str, object]]] = {}
+    if not isinstance(document, dict) or not isinstance(document.get("hooks"), dict):
+        return locations
+    hooks = document["hooks"]
+    for event in HOOK_EVENTS:
+        groups = hooks.get(event)
+        if not isinstance(groups, list):
+            continue
+        for group_index, group in enumerate(groups):
+            if not _is_buddy_group(group):
+                continue
+            handlers = group.get("hooks") if isinstance(group, dict) else None
+            if not isinstance(handlers, list):
+                continue
+            for handler_index, handler in enumerate(handlers):
+                if isinstance(handler, dict):
+                    locations[event] = (group_index, handler_index, handler)
+                    break
+            if event in locations:
+                break
+    return locations
+
+
+def verify_executable_hooks(target: Path, executable: Path) -> List[str]:
+    document = read_document(target)
+    expected = build_executable_hook_groups(executable)
+    errors: List[str] = []
+    hooks = document.get("hooks")
+    if not isinstance(hooks, dict):
+        return ["hooks.json 缺少 hooks 对象"]
+    for event in HOOK_EVENTS:
+        groups = hooks.get(event)
+        buddy_groups = ([group for group in groups if _is_buddy_group(group)]
+                        if isinstance(groups, list) else [])
+        if len(buddy_groups) != 1:
+            errors.append(f"{event} 应有 1 个 Codex Buddy Hook，实际为 {len(buddy_groups)} 个")
+            continue
+        if buddy_groups[0] != expected[event][0]:
+            errors.append(f"{event} 的 Hook 命令或超时配置不正确")
+    return errors
+
+
 def install(target: Path, python_executable: Path,
-            hook_script: Path) -> None:
+            hook_script: Path) -> bool:
+    existing = read_document(target)
     document = merge_hooks(
-        _read_document(target),
+        existing,
         build_hook_groups(python_executable, hook_script),
     )
-    _write_document(target, document)
+    changed = document != existing
+    if changed:
+        _write_document(target, document)
+    return changed
+
+
+def install_executable(target: Path, executable: Path) -> bool:
+    existing = read_document(target)
+    document = merge_hooks(
+        existing,
+        build_executable_hook_groups(executable),
+    )
+    changed = document != existing
+    if changed:
+        _write_document(target, document)
+    return changed
 
 
 def uninstall(target: Path) -> None:
-    _write_document(target, remove_hooks(_read_document(target)))
+    existing = read_document(target)
+    document = remove_hooks(existing)
+    if document != existing:
+        _write_document(target, document)
 
 
-def main() -> int:
+def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="安装 Codex Buddy 实时状态与双端审批 Hook")
     parser.add_argument("action", choices=("install", "uninstall"), nargs="?", default="install")
     parser.add_argument(
         "--target", type=Path,
         default=Path.home() / ".codex" / "hooks.json",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     script = Path(__file__).with_name("codex_hook.py")
     if args.action == "install":
-        install(args.target, Path(sys.executable), script)
+        changed = install(args.target, Path(sys.executable), script)
         print("Codex Buddy Hook 已安装: %s" % args.target)
-        print("请在 Codex CLI 中打开 /hooks，信任更新后的 Hook，再完全重启 Codex Desktop。")
+        if changed:
+            print("Hook 配置已更新。请完全重启 Codex，打开 /hooks，信任并启用全部六个 Hook。")
+        else:
+            print("Hook 配置没有变化。如状态仍未同步，请在 /hooks 中检查信任与启用状态。")
     else:
         uninstall(args.target)
         print("Codex Buddy Hook 已移除: %s" % args.target)

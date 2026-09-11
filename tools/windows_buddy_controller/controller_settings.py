@@ -6,8 +6,12 @@ from dataclasses import asdict, dataclass
 import json
 import os
 from pathlib import Path
-import tempfile
 from typing import Optional
+
+if __package__:
+    from .platform_paths import product_data_dir
+else:
+    from platform_paths import product_data_dir
 
 
 @dataclass
@@ -18,10 +22,7 @@ class ControllerSettings:
 
 
 def default_settings_path() -> Path:
-    root = os.environ.get("LOCALAPPDATA")
-    if not root:
-        root = tempfile.gettempdir()
-    return Path(root) / "CodexBuddy" / "settings.json"
+    return product_data_dir() / "settings.json"
 
 
 def load_settings(path: Optional[Path] = None) -> ControllerSettings:
